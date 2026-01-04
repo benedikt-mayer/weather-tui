@@ -14,7 +14,7 @@ class DayCard(Static):
     DEFAULT_CSS = """
     DayCard {
         width: 10;
-        height: 5;
+        height: 6;
         min-width: 10;
         border: solid $primary;
         background: $surface;
@@ -47,11 +47,12 @@ class DayCard(Static):
 
         # Format the card label
         day_name = day.date.strftime("%a")
-        date_str = day.date.strftime("%d/%m")
+        date_str = day.date.strftime("%d.%m")
+        # Format temps without padding, then center the whole string
         max_t = f"{day.temp_max:.0f}" if day.temp_max is not None else "?"
         min_t = f"{day.temp_min:.0f}" if day.temp_min is not None else "?"
         prec = f"{day.precipitation_sum:.0f}" if day.precipitation_sum else "0"
-        temp_str = f"{max_t}/{min_t}°"
+        temp_str = f"{min_t}/{max_t}"
         prec_str = f"{prec}mm"
 
         # Build label with centered text lines (no emoji due to rendering issues)

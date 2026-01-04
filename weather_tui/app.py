@@ -41,10 +41,19 @@ class CurrentWeatherWidget(Static):
             "",
             current.description,
             "",
-            f"Temperature: {current.temperature:.1f}°C"
-            if current.temperature
+            f"Temperature: {current.temperature:5.1f}°C"
+            if current.temperature is not None
             else "Temperature: N/A",
         ]
+
+        # Add high/low from today's daily forecast
+        if data.daily:
+            today_daily = data.daily[0]
+            if today_daily.temp_max is not None and today_daily.temp_min is not None:
+                lines.append(
+                    f"Low: {today_daily.temp_min:5.1f}°C / "
+                    f"High: {today_daily.temp_max:5.1f}°C"
+                )
 
         self.update("\n".join(lines))
 
@@ -60,14 +69,15 @@ class CurrentWeatherWidget(Static):
             "",
             day.description,
             "",
+            "",  # Empty line to match today's "Temperature:" line
         ]
 
         if day.temp_max is not None and day.temp_min is not None:
-            lines.append(f"High: {day.temp_max:.1f}°C / Low: {day.temp_min:.1f}°C")
+            lines.append(f"Low: {day.temp_min:5.1f}°C / High: {day.temp_max:5.1f}°C")
         elif day.temp_max is not None:
-            lines.append(f"High: {day.temp_max:.1f}°C")
+            lines.append(f"High: {day.temp_max:5.1f}°C")
         elif day.temp_min is not None:
-            lines.append(f"Low: {day.temp_min:.1f}°C")
+            lines.append(f"Low: {day.temp_min:5.1f}°C")
         else:
             lines.append("Temperature: N/A")
 
