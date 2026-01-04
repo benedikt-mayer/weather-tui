@@ -13,12 +13,12 @@ class DayCard(Static):
 
     DEFAULT_CSS = """
     DayCard {
-        width: 12;
-        height: 6;
-        min-width: 12;
+        width: 10;
+        height: 5;
+        min-width: 10;
         border: solid $primary;
         background: $surface;
-        margin: 0 1;
+        margin: 0;
         padding: 0;
         text-align: center;
         content-align: center middle;
@@ -80,13 +80,6 @@ class DailyForecastWidget(Static):
         padding: 1;
     }
 
-    DailyForecastWidget #daily-title {
-        height: 1;
-        padding: 0 1;
-        margin-bottom: 1;
-        text-style: bold;
-    }
-
     DailyForecastWidget #days-container {
         height: auto;
         align: center middle;
@@ -111,9 +104,6 @@ class DailyForecastWidget(Static):
         self._selected_index = 0
 
     def compose(self) -> ComposeResult:
-        yield Static(
-            "📅 Weekly Forecast (click a day to view details)", id="daily-title"
-        )
         yield Horizontal(id="days-container")
 
     def on_mount(self) -> None:

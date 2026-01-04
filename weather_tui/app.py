@@ -5,14 +5,14 @@ from datetime import datetime
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
-from textual.widgets import Footer, Header, Static
+from textual.screen import Screen
+from textual.widgets import Footer, Header, Input, Static
 
 from .models.forecast import WeatherData
 from .services.geocoding import GeocodingError, geocode_location
 from .services.weather import WeatherError, fetch_weather
 from .widgets.daily_forecast import DailyForecastWidget
 from .widgets.hourly_graph import HourlyGraphWidget
-from .widgets.location_input import LocationInput
 
 
 class CurrentWeatherWidget(Static):
@@ -74,18 +74,72 @@ class CurrentWeatherWidget(Static):
         self.update("\n".join(lines))
 
 
-class WeatherApp(App):
-    """A TUI application for displaying weather forecasts."""
+class SearchScreen(Screen):
+    """Screen for searching locations."""
 
-    TITLE = "Weather TUI"
+    BINDINGS = [
+        ("escape", "cancel", "Cancel"),
+    ]
+
     CSS = """
-    Screen {
-        layout: vertical;
+    SearchScreen {
+        align: center middle;
     }
 
+    #search-container {
+        width: 60;
+        height: auto;
+        border: solid $primary;
+        padding: 1 2;
+        background: $surface;
+    }
+
+    #search-title {
+        text-align: center;
+        text-style: bold;
+        margin-bottom: 1;
+    }
+
+    #search-input {
+        width: 100%;
+    }
+    """
+
+    def compose(self) -> ComposeResult:
+        yield Header()
+        with Container(id="search-container"):
+            yield Static("Enter location to search", id="search-title")
+            yield Input(placeholder="City name...", id="search-input")
+        yield Footer()
+
+    def on_mount(self) -> None:
+        """Focus the input on mount."""
+        self.query_one("#search-input", Input).focus()
+
+    def on_input_submitted(self, event: Input.Submitted) -> None:
+        """Handle search submission."""
+        location = event.value.strip()
+        if location:
+            self.dismiss(location)
+
+    def action_cancel(self) -> None:
+        """Cancel search and return to weather screen."""
+        self.dismiss(None)
+
+
+class WeatherScreen(Screen):
+    """Main weather display screen."""
+
+    BINDINGS = [
+        ("s", "search", "Search"),
+        ("r", "refresh", "Refresh"),
+        ("q", "quit", "Quit"),
+    ]
+
+    CSS = """
     #main-container {
         height: 1fr;
-        padding: 1;
+        padding: 0 1;
     }
 
     #weather-container {
@@ -94,16 +148,15 @@ class WeatherApp(App):
 
     #top-row {
         height: auto;
-        margin-bottom: 1;
     }
 
     #current-weather {
         height: auto;
         width: auto;
-        min-width: 30;
-        margin-right: 2;
+        min-width: 25;
+        margin-right: 1;
         border: solid $primary;
-        padding: 1;
+        padding: 0 1;
     }
 
     #daily-forecast {
@@ -113,21 +166,19 @@ class WeatherApp(App):
 
     #hourly-section {
         height: auto;
-        margin-bottom: 1;
         border: solid $primary;
-        padding: 1;
+        padding: 0 1;
     }
 
     #hourly-title {
         height: 1;
         padding: 0 1;
         text-style: bold;
-        margin-bottom: 1;
     }
 
     #status {
         height: auto;
-        padding: 1;
+        padding: 0 1;
         text-align: center;
         color: $text-muted;
     }
@@ -141,22 +192,15 @@ class WeatherApp(App):
     }
     """
 
-    BINDINGS = [
-        ("q", "quit", "Quit"),
-        ("r", "refresh", "Refresh"),
-        ("l", "focus_location", "Location"),
-    ]
-
-    def __init__(self, initial_location: str | None = None) -> None:
-        super().__init__()
-        self._initial_location = initial_location
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self._weather_data: WeatherData | None = None
+        self._current_location: str | None = None
 
     def compose(self) -> ComposeResult:
         yield Header()
         yield Container(
-            LocationInput(id="location-widget"),
-            Static("Enter a location to get started", id="status"),
+            Static("Press 's' to search for a location", id="status"),
             Vertical(
                 Horizontal(
                     CurrentWeatherWidget(id="current-weather"),
@@ -164,7 +208,7 @@ class WeatherApp(App):
                     id="top-row",
                 ),
                 Container(
-                    Static("📊 Hourly Forecast - Today", id="hourly-title"),
+                    Static("Hourly Forecast - Today", id="hourly-title"),
                     HourlyGraphWidget(id="hourly-graph"),
                     id="hourly-section",
                 ),
@@ -174,29 +218,19 @@ class WeatherApp(App):
         )
         yield Footer()
 
-    async def on_mount(self) -> None:
-        """Handle app mount - load initial location if provided."""
-        # Hide weather container initially
+    def on_mount(self) -> None:
+        """Hide weather container initially."""
         weather_container = self.query_one("#weather-container")
         weather_container.display = False
 
-        if self._initial_location:
-            location_widget = self.query_one("#location-widget", LocationInput)
-            location_widget.set_location(self._initial_location)
-            await self._load_weather(self._initial_location)
-
-    async def on_location_input_location_submitted(
-        self, event: LocationInput.LocationSubmitted
-    ) -> None:
-        """Handle location submission."""
-        await self._load_weather(event.location)
-
-    async def _load_weather(self, location: str) -> None:
+    async def load_weather(self, location: str) -> None:
         """Load weather for a location."""
+        self._current_location = location
         status = self.query_one("#status", Static)
         weather_container = self.query_one("#weather-container")
 
-        status.update(f"🔍 Searching for {location}...")
+        status.display = True
+        status.update(f"Searching for {location}...")
         status.add_class("loading")
         status.remove_class("error")
 
@@ -207,7 +241,7 @@ class WeatherApp(App):
                 raise GeocodingError(f"Location '{location}' not found")
 
             geo = locations[0]
-            status.update(f"🌐 Fetching weather for {geo.display_name}...")
+            status.update(f"Fetching weather for {geo.display_name}...")
 
             # Fetch weather
             self._weather_data = await fetch_weather(
@@ -217,26 +251,25 @@ class WeatherApp(App):
             # Update widgets
             self._update_display()
 
-            # Hide status and show weather
-            status.update("")
+            # Hide status, show weather
             status.display = False
             status.remove_class("loading")
             weather_container.display = True
 
         except GeocodingError as e:
-            status.update(f"❌ Geocoding error: {e}")
+            status.update(f"Geocoding error: {e}")
             status.remove_class("loading")
             status.add_class("error")
             weather_container.display = False
 
         except WeatherError as e:
-            status.update(f"❌ Weather error: {e}")
+            status.update(f"Weather error: {e}")
             status.remove_class("loading")
             status.add_class("error")
             weather_container.display = False
 
         except Exception as e:
-            status.update(f"❌ Error: {e}")
+            status.update(f"Error: {e}")
             status.remove_class("loading")
             status.add_class("error")
             weather_container.display = False
@@ -268,7 +301,7 @@ class WeatherApp(App):
         today_hourly = self._weather_data.get_today_hourly()
         hourly_data = today_hourly if today_hourly else self._weather_data.hourly[:24]
         hourly_widget.update_data(hourly_data)
-        hourly_title.update("📊 Hourly Forecast - Today")
+        hourly_title.update("Hourly Forecast - Today")
 
     def _update_hourly_for_day(self, day_date: datetime, day_index: int) -> None:
         """Update hourly graph with a specific day's data."""
@@ -283,11 +316,10 @@ class WeatherApp(App):
         if day_hourly:
             hourly_widget.update_data(day_hourly)
             day_name = day_date.strftime("%A, %B %d")
-            hourly_title.update(f"📊 Hourly Forecast - {day_name}")
+            hourly_title.update(f"Hourly Forecast - {day_name}")
         else:
-            # If no hourly data for that day, show message
             day_name = day_date.strftime("%A")
-            hourly_title.update(f"📊 Hourly Forecast - {day_name} (no data)")
+            hourly_title.update(f"Hourly Forecast - {day_name} (no data)")
             hourly_widget.update_data([])
 
     def on_daily_forecast_widget_day_selected(
@@ -299,25 +331,53 @@ class WeatherApp(App):
         # Update current weather widget with the selected day's summary
         current_widget = self.query_one("#current-weather", CurrentWeatherWidget)
         if event.index == 0 and self._weather_data and self._weather_data.current:
-            # For today, show current weather
             current_widget.update_weather(self._weather_data)
         else:
-            # For other days, show day summary
             location = self._weather_data.location_name if self._weather_data else None
             current_widget.update_for_day(event.day, location)
 
+    def action_search(self) -> None:
+        """Open search screen."""
+        self.app.push_screen(SearchScreen(), self._handle_search_result)
+
+    def _handle_search_result(self, location: str | None) -> None:
+        """Handle result from search screen."""
+        if location:
+            self.run_worker(self.load_weather(location))
+
     async def action_refresh(self) -> None:
         """Refresh current weather."""
-        location_widget = self.query_one("#location-widget", LocationInput)
-        input_widget = location_widget.query_one("#location-input")
-        location = input_widget.value.strip()
-        if location:
-            await self._load_weather(location)
+        if self._current_location:
+            await self.load_weather(self._current_location)
 
-    def action_focus_location(self) -> None:
-        """Focus the location input."""
-        input_widget = self.query_one("#location-input")
-        input_widget.focus()
+    def action_quit(self) -> None:
+        """Quit the application."""
+        self.app.exit()
+
+
+class WeatherApp(App):
+    """A TUI application for displaying weather forecasts."""
+
+    TITLE = "Weather TUI"
+    CSS = """
+    Screen {
+        layout: vertical;
+    }
+    """
+
+    def __init__(self, initial_location: str | None = None) -> None:
+        super().__init__()
+        self._initial_location = initial_location
+
+    def on_mount(self) -> None:
+        """Push the weather screen on mount."""
+        weather_screen = WeatherScreen()
+        self.push_screen(weather_screen)
+
+        if self._initial_location:
+            weather_screen.run_worker(
+                weather_screen.load_weather(self._initial_location)
+            )
 
 
 def main() -> None:

@@ -14,18 +14,16 @@ class HourlyGraphWidget(Vertical):
     DEFAULT_CSS = """
     HourlyGraphWidget {
         height: auto;
-        min-height: 25;
-        padding: 0 1;
+        min-height: 16;
+        padding: 0;
     }
 
     HourlyGraphWidget PlotextPlot {
-        height: 12;
-        margin-bottom: 1;
+        height: 8;
     }
 
     HourlyGraphWidget #temp-title, HourlyGraphWidget #precip-title {
         height: 1;
-        padding: 0 1;
         text-style: bold;
     }
     """
@@ -84,6 +82,9 @@ class HourlyGraphWidget(Vertical):
             xticks = list(range(0, 24, 3))
             plt.xticks(xticks)
 
+            # Fixed Y-axis scale for temperature: -20°C to 40°C
+            plt.ylim(-20, 40)
+
         temp_plot.refresh()
 
     def _render_precip_plot(self) -> None:
@@ -108,5 +109,8 @@ class HourlyGraphWidget(Vertical):
             # Set x ticks to show every 3 hours
             xticks = list(range(0, 24, 3))
             plt.xticks(xticks)
+
+            # Fixed Y-axis scale for precipitation: 0 to 20mm
+            plt.ylim(0, 20)
 
         precip_plot.refresh()
