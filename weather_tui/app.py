@@ -4,7 +4,7 @@ import sys
 from datetime import datetime
 
 from textual.app import App, ComposeResult
-from textual.containers import Container, Vertical
+from textual.containers import Container, Horizontal, Vertical
 from textual.widgets import Footer, Header, Static
 
 from .models.forecast import WeatherData
@@ -36,14 +36,14 @@ class CurrentWeatherWidget(Static):
         current = data.current
         today = datetime.now().strftime("%A, %B %d")
         lines = [
-            f"📍 {data.location_name}" if data.location_name else "📍 Current Location",
-            f"📅 {today}",
+            data.location_name if data.location_name else "Current Location",
+            today,
             "",
-            f"{current.emoji} {current.description}",
+            current.description,
             "",
-            f"🌡️  Temperature: {current.temperature:.1f}°C"
+            f"Temperature: {current.temperature:.1f}°C"
             if current.temperature
-            else "🌡️  Temperature: N/A",
+            else "Temperature: N/A",
         ]
 
         self.update("\n".join(lines))
@@ -55,21 +55,21 @@ class CurrentWeatherWidget(Static):
 
         day_name = day.date.strftime("%A, %B %d")
         lines = [
-            f"📍 {location_name}" if location_name else "📍 Current Location",
-            f"📅 {day_name}",
+            location_name if location_name else "Current Location",
+            day_name,
             "",
-            f"{day.emoji} {day.description}",
+            day.description,
             "",
         ]
 
         if day.temp_max is not None and day.temp_min is not None:
-            lines.append(f"🌡️  High: {day.temp_max:.1f}°C / Low: {day.temp_min:.1f}°C")
+            lines.append(f"High: {day.temp_max:.1f}°C / Low: {day.temp_min:.1f}°C")
         elif day.temp_max is not None:
-            lines.append(f"🌡️  High: {day.temp_max:.1f}°C")
+            lines.append(f"High: {day.temp_max:.1f}°C")
         elif day.temp_min is not None:
-            lines.append(f"🌡️  Low: {day.temp_min:.1f}°C")
+            lines.append(f"Low: {day.temp_min:.1f}°C")
         else:
-            lines.append("🌡️  Temperature: N/A")
+            lines.append("Temperature: N/A")
 
         self.update("\n".join(lines))
 
@@ -92,9 +92,23 @@ class WeatherApp(App):
         height: 1fr;
     }
 
-    #current-weather {
+    #top-row {
         height: auto;
         margin-bottom: 1;
+    }
+
+    #current-weather {
+        height: auto;
+        width: auto;
+        min-width: 30;
+        margin-right: 2;
+        border: solid $primary;
+        padding: 1;
+    }
+
+    #daily-forecast {
+        height: auto;
+        width: 1fr;
     }
 
     #hourly-section {
@@ -109,12 +123,6 @@ class WeatherApp(App):
         padding: 0 1;
         text-style: bold;
         margin-bottom: 1;
-    }
-
-    #daily-section {
-        height: auto;
-        border: solid $primary;
-        padding: 1;
     }
 
     #status {
@@ -150,13 +158,16 @@ class WeatherApp(App):
             LocationInput(id="location-widget"),
             Static("Enter a location to get started", id="status"),
             Vertical(
-                CurrentWeatherWidget(id="current-weather"),
+                Horizontal(
+                    CurrentWeatherWidget(id="current-weather"),
+                    DailyForecastWidget(id="daily-forecast"),
+                    id="top-row",
+                ),
                 Container(
                     Static("📊 Hourly Forecast - Today", id="hourly-title"),
                     HourlyGraphWidget(id="hourly-graph"),
                     id="hourly-section",
                 ),
-                Container(DailyForecastWidget(id="daily-forecast"), id="daily-section"),
                 id="weather-container",
             ),
             id="main-container",
@@ -206,8 +217,9 @@ class WeatherApp(App):
             # Update widgets
             self._update_display()
 
-            # Show success
-            status.update(f"✅ Weather loaded for {geo.display_name}")
+            # Hide status and show weather
+            status.update("")
+            status.display = False
             status.remove_class("loading")
             weather_container.display = True
 
