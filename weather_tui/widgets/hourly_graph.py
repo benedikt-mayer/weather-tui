@@ -1,17 +1,32 @@
-"""Hourly weather graph widget."""
+"""Hourly weather graph widget using textual-plotext."""
 
+from textual.app import ComposeResult
+from textual.containers import Vertical
 from textual.widgets import Static
+from textual_plotext import PlotextPlot
 
 from ..models.forecast import HourlyForecast
 
 
-class HourlyGraphWidget(Static):
-    """Widget displaying hourly temperature and precipitation graphs."""
+class HourlyGraphWidget(Vertical):
+    """Widget displaying hourly temperature and precipitation graphs using plotext."""
 
     DEFAULT_CSS = """
     HourlyGraphWidget {
         height: auto;
-        padding: 1;
+        min-height: 25;
+        padding: 0 1;
+    }
+
+    HourlyGraphWidget PlotextPlot {
+        height: 12;
+        margin-bottom: 1;
+    }
+
+    HourlyGraphWidget #temp-title, HourlyGraphWidget #precip-title {
+        height: 1;
+        padding: 0 1;
+        text-style: bold;
     }
     """
 
@@ -23,135 +38,75 @@ class HourlyGraphWidget(Static):
         super().__init__(**kwargs)
         self._hourly_data = hourly_data or []
 
-    def update_data(self, hourly_data: list[HourlyForecast]) -> None:
-        """Update the hourly data and refresh display."""
-        self._hourly_data = hourly_data
-        self.update(self._render_graphs())
+    def compose(self) -> ComposeResult:
+        yield Static("🌡️  Temperature (°C)", id="temp-title")
+        yield PlotextPlot(id="temp-plot")
+        yield Static("🌧️  Precipitation (mm)", id="precip-title")
+        yield PlotextPlot(id="precip-plot")
 
     def on_mount(self) -> None:
-        """Render initial content."""
-        self.update(self._render_graphs())
+        """Render initial plots."""
+        self._render_plots()
 
-    def _render_graphs(self) -> str:
-        """Render temperature and precipitation graphs."""
+    def update_data(self, hourly_data: list[HourlyForecast]) -> None:
+        """Update the hourly data and refresh plots."""
+        self._hourly_data = hourly_data
+        self._render_plots()
+
+    def _render_plots(self) -> None:
+        """Render temperature and precipitation plots."""
         if not self._hourly_data:
-            return "No hourly data available"
+            return
 
-        lines = []
+        self._render_temp_plot()
+        self._render_precip_plot()
 
-        # Temperature graph
-        lines.append("🌡️  Temperature (°C)")
-        lines.append(self._render_temp_graph())
-        lines.append("")
+    def _render_temp_plot(self) -> None:
+        """Render temperature line plot."""
+        temp_plot = self.query_one("#temp-plot", PlotextPlot)
+        plt = temp_plot.plt
 
-        # Precipitation graph
-        lines.append("🌧️  Precipitation (mm)")
-        lines.append(self._render_precip_graph())
-        lines.append("")
+        plt.clear_figure()
+        plt.theme("dark")
 
-        # Time axis
-        lines.append(self._render_time_axis())
+        hours = []
+        temps = []
+        for h in self._hourly_data[:24]:
+            hours.append(h.time.hour)
+            temps.append(h.temperature if h.temperature is not None else 0)
 
-        return "\n".join(lines)
+        if temps:
+            plt.plot(hours, temps, marker="braille", color="red")
+            plt.xlabel("Hour")
+            plt.ylabel("°C")
 
-    def _render_temp_graph(self) -> str:
-        """Render ASCII temperature line graph."""
-        temps = [h.temperature for h in self._hourly_data if h.temperature is not None]
-        if not temps:
-            return "  No temperature data"
+            # Set x ticks to show every 3 hours
+            xticks = list(range(0, 24, 3))
+            plt.xticks(xticks)
 
-        min_temp = min(temps)
-        max_temp = max(temps)
-        temp_range = max_temp - min_temp if max_temp != min_temp else 1
+        temp_plot.refresh()
 
-        # Graph height in rows
-        height = 5
-        width = min(len(temps), 24)
+    def _render_precip_plot(self) -> None:
+        """Render precipitation bar plot."""
+        precip_plot = self.query_one("#precip-plot", PlotextPlot)
+        plt = precip_plot.plt
 
-        # Characters for line drawing
-        chars = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
+        plt.clear_figure()
+        plt.theme("dark")
 
-        # Build graph
-        graph_lines = []
-        for row in range(height - 1, -1, -1):
-            line = "  │"
-            for i in range(width):
-                if i < len(temps) and temps[i] is not None:
-                    # Normalize to 0-1
-                    normalized = (temps[i] - min_temp) / temp_range
-                    # Map to row
-                    row_value = normalized * (height - 1)
-                    if abs(row_value - row) < 0.5:
-                        line += "●"
-                    elif row_value > row:
-                        char_idx = min(
-                            int((row_value - row) * len(chars)), len(chars) - 1
-                        )
-                        line += chars[char_idx] if row < row_value else " "
-                    else:
-                        line += " "
-                else:
-                    line += " "
-            graph_lines.append(line)
+        hours = []
+        precs = []
+        for h in self._hourly_data[:24]:
+            hours.append(h.time.hour)
+            precs.append(h.precipitation if h.precipitation is not None else 0)
 
-        # Add scale
-        graph_lines[0] = f"{max_temp:4.0f}" + graph_lines[0][4:]
-        graph_lines[-1] = f"{min_temp:4.0f}" + graph_lines[-1][4:]
+        if precs:
+            plt.bar(hours, precs, color="blue", width=0.8)
+            plt.xlabel("Hour")
+            plt.ylabel("mm")
 
-        return "\n".join(graph_lines)
+            # Set x ticks to show every 3 hours
+            xticks = list(range(0, 24, 3))
+            plt.xticks(xticks)
 
-    def _render_precip_graph(self) -> str:
-        """Render ASCII precipitation bar graph."""
-        precs = [
-            h.precipitation if h.precipitation is not None else 0
-            for h in self._hourly_data
-        ]
-        if not precs or max(precs) == 0:
-            return "  │" + "▁" * min(len(precs), 24) + "  (no precipitation)"
-
-        max_prec = max(precs) if max(precs) > 0 else 1
-
-        # Bar characters
-        bars = [" ", "▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
-
-        height = 3
-        width = min(len(precs), 24)
-
-        graph_lines = []
-        for row in range(height - 1, -1, -1):
-            line = "  │"
-            for i in range(width):
-                if i < len(precs):
-                    normalized = precs[i] / max_prec
-                    bar_height = normalized * height
-                    if bar_height > row + 0.1:
-                        line += "█"
-                    elif bar_height > row:
-                        char_idx = int((bar_height - row) * (len(bars) - 1))
-                        line += bars[char_idx]
-                    else:
-                        line += " "
-                else:
-                    line += " "
-            graph_lines.append(line)
-
-        # Add scale
-        graph_lines[0] = f"{max_prec:4.1f}" + graph_lines[0][4:]
-
-        return "\n".join(graph_lines)
-
-    def _render_time_axis(self) -> str:
-        """Render time axis labels."""
-        width = min(len(self._hourly_data), 24)
-        axis = "  └" + "─" * width
-
-        # Hour labels (every 3 hours)
-        labels = "   "
-        for i in range(0, width, 3):
-            if i < len(self._hourly_data):
-                hour = self._hourly_data[i].time.hour
-                labels += f"{hour:02d}" + " "
-            else:
-                labels += "   "
-
-        return axis + "\n" + labels
+        precip_plot.refresh()
