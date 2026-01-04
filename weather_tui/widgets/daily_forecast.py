@@ -3,48 +3,72 @@
 from textual.app import ComposeResult
 from textual.containers import Horizontal
 from textual.message import Message
-from textual.widgets import Button, Static
+from textual.widgets import Static
 
 from ..models.forecast import DailyForecast
 
 
-class DayButton(Button):
-    """A button representing a single day in the forecast."""
+class DayCard(Static):
+    """A clickable card representing a single day in the forecast."""
 
     DEFAULT_CSS = """
-    DayButton {
+    DayCard {
         width: 12;
-        height: 7;
+        height: 6;
         min-width: 12;
         border: solid $primary;
         background: $surface;
         margin: 0 1;
+        padding: 0;
+        text-align: center;
+        content-align: center middle;
     }
 
-    DayButton:hover {
+    DayCard:hover {
         background: $primary-darken-1;
     }
 
-    DayButton.-selected {
+    DayCard.-selected {
         border: solid $success;
         background: $success-darken-3;
     }
     """
 
+    class Clicked(Message):
+        """Message sent when the card is clicked."""
+
+        def __init__(self, card: "DayCard") -> None:
+            self.card = card
+            super().__init__()
+
     def __init__(self, day: DailyForecast, index: int, **kwargs) -> None:
         self.day = day
         self.day_index = index
 
-        # Format the button label
+        # Format the card label
         day_name = day.date.strftime("%a")
         date_str = day.date.strftime("%d/%m")
         max_t = f"{day.temp_max:.0f}" if day.temp_max is not None else "?"
         min_t = f"{day.temp_min:.0f}" if day.temp_min is not None else "?"
         prec = f"{day.precipitation_sum:.0f}" if day.precipitation_sum else "0"
+        temp_str = f"{max_t}/{min_t}°"
+        prec_str = f"{prec}mm"
 
-        label = f"{day_name}\n{date_str}\n{day.emoji}\n{max_t}/{min_t}°\n{prec}mm"
+        # Build label with centered text lines (no emoji due to rendering issues)
+        width = 8
+        lines = [
+            day_name.center(width),
+            date_str.center(width),
+            temp_str.center(width),
+            prec_str.center(width),
+        ]
+        label = "\n".join(lines)
 
         super().__init__(label, **kwargs)
+
+    def on_click(self) -> None:
+        """Handle click events."""
+        self.post_message(self.Clicked(self))
 
 
 class DailyForecastWidget(Static):
@@ -116,33 +140,31 @@ class DailyForecastWidget(Static):
 
         # Render up to 7 days
         for i, day in enumerate(self._daily_data[:7]):
-            btn = DayButton(day, i)
+            card = DayCard(day, i)
             if i == self._selected_index:
-                btn.add_class("-selected")
-            container.mount(btn)
+                card.add_class("-selected")
+            container.mount(card)
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle day button press."""
-        if isinstance(event.button, DayButton):
-            # Update selection
-            self._selected_index = event.button.day_index
+    def on_day_card_clicked(self, event: DayCard.Clicked) -> None:
+        """Handle day card click."""
+        card = event.card
+        # Update selection
+        self._selected_index = card.day_index
 
-            # Update button styles
-            for btn in self.query(DayButton):
-                btn.remove_class("-selected")
-            event.button.add_class("-selected")
+        # Update card styles
+        for c in self.query(DayCard):
+            c.remove_class("-selected")
+        card.add_class("-selected")
 
-            # Post message
-            self.post_message(
-                self.DaySelected(event.button.day, event.button.day_index)
-            )
+        # Post message
+        self.post_message(self.DaySelected(card.day, card.day_index))
 
     def select_day(self, index: int) -> None:
         """Programmatically select a day."""
         if 0 <= index < len(self._daily_data):
             self._selected_index = index
-            for btn in self.query(DayButton):
-                if btn.day_index == index:
-                    btn.add_class("-selected")
+            for card in self.query(DayCard):
+                if card.day_index == index:
+                    card.add_class("-selected")
                 else:
-                    btn.remove_class("-selected")
+                    card.remove_class("-selected")

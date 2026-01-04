@@ -46,12 +46,6 @@ class CurrentWeatherWidget(Static):
             else "🌡️  Temperature: N/A",
         ]
 
-        if current.wind_speed is not None:
-            direction = ""
-            if current.wind_direction is not None:
-                direction = f" at {current.wind_direction:.0f}°"
-            lines.append(f"💨 Wind: {current.wind_speed:.1f} km/h{direction}")
-
         self.update("\n".join(lines))
 
     def update_for_day(self, day, location_name: str | None = None) -> None:
@@ -76,9 +70,6 @@ class CurrentWeatherWidget(Static):
             lines.append(f"🌡️  Low: {day.temp_min:.1f}°C")
         else:
             lines.append("🌡️  Temperature: N/A")
-
-        if day.precipitation_sum is not None and day.precipitation_sum > 0:
-            lines.append(f"🌧️  Precipitation: {day.precipitation_sum:.1f} mm")
 
         self.update("\n".join(lines))
 
@@ -319,7 +310,7 @@ class WeatherApp(App):
 
 def main() -> None:
     """Main entry point."""
-    initial_location = sys.argv[1] if len(sys.argv) > 1 else None
+    initial_location = sys.argv[1] if len(sys.argv) > 1 else "Munich"
     app = WeatherApp(initial_location=initial_location)
     app.run()
 
