@@ -134,3 +134,10 @@ class WeatherData:
             return []
         today = datetime.now().date()
         return [h for h in self.hourly if h.time.date() == today]
+
+    def get_hourly_for_date(self, target_date: datetime) -> list[HourlyForecast]:
+        """Get hourly forecasts for a specific date."""
+        if not self.hourly:
+            return []
+        target = target_date.date()
+        return [h for h in self.hourly if h.time.date() == target]

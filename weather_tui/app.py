@@ -1,6 +1,7 @@
 """Weather TUI main application."""
 
 import sys
+from datetime import datetime
 
 from textual.app import App, ComposeResult
 from textual.containers import Container, Vertical
@@ -33,8 +34,10 @@ class CurrentWeatherWidget(Static):
             return
 
         current = data.current
+        today = datetime.now().strftime("%A, %B %d")
         lines = [
             f"📍 {data.location_name}" if data.location_name else "📍 Current Location",
+            f"📅 {today}",
             "",
             f"{current.emoji} {current.description}",
             "",
@@ -48,6 +51,34 @@ class CurrentWeatherWidget(Static):
             if current.wind_direction is not None:
                 direction = f" at {current.wind_direction:.0f}°"
             lines.append(f"💨 Wind: {current.wind_speed:.1f} km/h{direction}")
+
+        self.update("\n".join(lines))
+
+    def update_for_day(self, day, location_name: str | None = None) -> None:
+        """Update display for a selected day's forecast."""
+        if day is None:
+            return
+
+        day_name = day.date.strftime("%A, %B %d")
+        lines = [
+            f"📍 {location_name}" if location_name else "📍 Current Location",
+            f"📅 {day_name}",
+            "",
+            f"{day.emoji} {day.description}",
+            "",
+        ]
+
+        if day.temp_max is not None and day.temp_min is not None:
+            lines.append(f"🌡️  High: {day.temp_max:.1f}°C / Low: {day.temp_min:.1f}°C")
+        elif day.temp_max is not None:
+            lines.append(f"🌡️  High: {day.temp_max:.1f}°C")
+        elif day.temp_min is not None:
+            lines.append(f"🌡️  Low: {day.temp_min:.1f}°C")
+        else:
+            lines.append("🌡️  Temperature: N/A")
+
+        if day.precipitation_sum is not None and day.precipitation_sum > 0:
+            lines.append(f"🌧️  Precipitation: {day.precipitation_sum:.1f} mm")
 
         self.update("\n".join(lines))
 
@@ -80,6 +111,13 @@ class WeatherApp(App):
         margin-bottom: 1;
         border: solid $primary;
         padding: 1;
+    }
+
+    #hourly-title {
+        height: 1;
+        padding: 0 1;
+        text-style: bold;
+        margin-bottom: 1;
     }
 
     #daily-section {
@@ -122,7 +160,11 @@ class WeatherApp(App):
             Static("Enter a location to get started", id="status"),
             Vertical(
                 CurrentWeatherWidget(id="current-weather"),
-                Container(HourlyGraphWidget(id="hourly-graph"), id="hourly-section"),
+                Container(
+                    Static("📊 Hourly Forecast - Today", id="hourly-title"),
+                    HourlyGraphWidget(id="hourly-graph"),
+                    id="hourly-section",
+                ),
                 Container(DailyForecastWidget(id="daily-forecast"), id="daily-section"),
                 id="weather-container",
             ),
@@ -206,14 +248,60 @@ class WeatherApp(App):
         current_widget.update_weather(self._weather_data)
 
         # Update hourly graph with today's data
-        hourly_widget = self.query_one("#hourly-graph", HourlyGraphWidget)
-        today_hourly = self._weather_data.get_today_hourly()
-        hourly_data = today_hourly if today_hourly else self._weather_data.hourly[:24]
-        hourly_widget.update_data(hourly_data)
+        self._update_hourly_for_today()
 
         # Update daily forecast
         daily_widget = self.query_one("#daily-forecast", DailyForecastWidget)
         daily_widget.update_data(self._weather_data.daily)
+
+    def _update_hourly_for_today(self) -> None:
+        """Update hourly graph with today's data."""
+        if not self._weather_data:
+            return
+
+        hourly_widget = self.query_one("#hourly-graph", HourlyGraphWidget)
+        hourly_title = self.query_one("#hourly-title", Static)
+
+        today_hourly = self._weather_data.get_today_hourly()
+        hourly_data = today_hourly if today_hourly else self._weather_data.hourly[:24]
+        hourly_widget.update_data(hourly_data)
+        hourly_title.update("📊 Hourly Forecast - Today")
+
+    def _update_hourly_for_day(self, day_date: datetime, day_index: int) -> None:
+        """Update hourly graph with a specific day's data."""
+        if not self._weather_data:
+            return
+
+        hourly_widget = self.query_one("#hourly-graph", HourlyGraphWidget)
+        hourly_title = self.query_one("#hourly-title", Static)
+
+        day_hourly = self._weather_data.get_hourly_for_date(day_date)
+
+        if day_hourly:
+            hourly_widget.update_data(day_hourly)
+            day_name = day_date.strftime("%A, %B %d")
+            hourly_title.update(f"📊 Hourly Forecast - {day_name}")
+        else:
+            # If no hourly data for that day, show message
+            day_name = day_date.strftime("%A")
+            hourly_title.update(f"📊 Hourly Forecast - {day_name} (no data)")
+            hourly_widget.update_data([])
+
+    def on_daily_forecast_widget_day_selected(
+        self, event: DailyForecastWidget.DaySelected
+    ) -> None:
+        """Handle day selection from the daily forecast widget."""
+        self._update_hourly_for_day(event.day.date, event.index)
+
+        # Update current weather widget with the selected day's summary
+        current_widget = self.query_one("#current-weather", CurrentWeatherWidget)
+        if event.index == 0 and self._weather_data and self._weather_data.current:
+            # For today, show current weather
+            current_widget.update_weather(self._weather_data)
+        else:
+            # For other days, show day summary
+            location = self._weather_data.location_name if self._weather_data else None
+            current_widget.update_for_day(event.day, location)
 
     async def action_refresh(self) -> None:
         """Refresh current weather."""
