@@ -6,7 +6,7 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.12"
 authors = [
-    {name = "Benedikt Mayer", email = "benedikt@example.com"},
+    {name = "Benedikt Mayer", email = "benedikt_mayer@outlook.de"},
 ]
 keywords = ["weather", "tui", "terminal", "textual", "forecast"]
 classifiers = [
