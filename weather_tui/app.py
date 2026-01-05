@@ -1,6 +1,5 @@
 """Weather TUI main application."""
 
-import sys
 from datetime import datetime
 
 from textual.app import App, ComposeResult
@@ -375,25 +374,16 @@ class WeatherApp(App):
     }
     """
 
-    def __init__(self, initial_location: str | None = None) -> None:
-        super().__init__()
-        self._initial_location = initial_location
-
     def on_mount(self) -> None:
         """Push the weather screen on mount."""
         weather_screen = WeatherScreen()
         self.push_screen(weather_screen)
-
-        if self._initial_location:
-            weather_screen.run_worker(
-                weather_screen.load_weather(self._initial_location)
-            )
+        weather_screen.run_worker(weather_screen.load_weather("Munich"))
 
 
 def main() -> None:
     """Main entry point."""
-    initial_location = sys.argv[1] if len(sys.argv) > 1 else "Munich"
-    app = WeatherApp(initial_location=initial_location)
+    app = WeatherApp()
     app.run()
 
 

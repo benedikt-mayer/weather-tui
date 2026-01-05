@@ -33,9 +33,6 @@ uv sync
 
 # Run the TUI
 uv run python -m weather_tui
-
-# Or with a specific location
-uv run python -m weather_tui "Munich"
 ```
 
 ## Environment variables 🌐
