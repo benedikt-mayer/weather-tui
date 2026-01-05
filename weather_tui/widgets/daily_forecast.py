@@ -31,6 +31,23 @@ def _temp_to_color(temp: float) -> str:
     return f"#{r:02x}{g:02x}{b:02x}"
 
 
+def _precip_to_color(precip: float) -> str:
+    """Convert precipitation to hex color (gray=none, purple=heavy rain).
+
+    Scale: 0mm = gray, 20mm+ = deep purple
+    """
+    p_max = 20.0
+    normalized = min(1.0, precip / p_max)
+
+    # Gray to purple gradient
+    # Gray: #888888, Purple: #8800ff
+    r = int(136 - 136 * normalized)  # 136 -> 0
+    g = int(136 - 136 * normalized)  # 136 -> 0
+    b = int(136 + 119 * normalized)  # 136 -> 255
+
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 class DayCard(Static):
     """A clickable card representing a single day in the forecast."""
 
@@ -71,8 +88,11 @@ class DayCard(Static):
         # Format the card label
         day_name = day.date.strftime("%a")
         date_str = day.date.strftime("%d.%m")
-        prec = f"{day.precipitation_sum:.0f}" if day.precipitation_sum else "0"
-        prec_str = f"{prec}mm"
+
+        # Format precipitation with color
+        prec_val = day.precipitation_sum if day.precipitation_sum else 0
+        prec_color = _precip_to_color(prec_val)
+        prec_str = f"[{prec_color}]{prec_val:.0f}mm[/]"
 
         # Format temps with colors
         if day.temp_min is not None:
@@ -93,7 +113,7 @@ class DayCard(Static):
             day_name.center(width),
             date_str.center(width),
             temp_str,
-            prec_str.center(width),
+            prec_str,
         ]
         label = "\n".join(lines)
 
