@@ -43,21 +43,30 @@ uv run python -m weather_tui
 weather-tui/
 ├── weather_tui/
 │   ├── __init__.py
-│   ├── app.py           # Main Textual App class
+│   ├── __main__.py       # Entry point for python -m weather_tui
+│   ├── app.py            # WeatherApp class and main() (~30 lines)
+│   ├── screens/
+│   │   ├── __init__.py
+│   │   ├── search.py     # SearchScreen for location search modal
+│   │   └── weather.py    # WeatherScreen main display screen
 │   ├── widgets/
 │   │   ├── __init__.py
-│   │   ├── hourly_graph.py   # Hour-by-hour temperature/rain graph
-│   │   ├── daily_forecast.py # Multi-day forecast widget
-│   │   └── location_input.py # Location search input
+│   │   ├── current_weather.py  # Current weather conditions widget
+│   │   ├── hourly_graph.py     # Hour-by-hour temperature/rain graph
+│   │   └── daily_forecast.py   # Multi-day forecast widget
 │   ├── services/
 │   │   ├── __init__.py
-│   │   ├── weather.py    # Open-Meteo weather fetching (from weather-mcp-server)
-│   │   └── geocoding.py  # OpenWeatherMap geocoding (from lat-long-mcp-server)
-│   └── models/
+│   │   ├── weather.py    # Open-Meteo weather fetching
+│   │   └── geocoding.py  # OpenWeatherMap geocoding
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── forecast.py   # Data classes for weather data
+│   └── utils/
 │       ├── __init__.py
-│       └── forecast.py   # Data classes for weather data
+│       └── colors.py     # Color utilities (temp_to_color, precip_to_color)
 ├── tests/
 │   ├── __init__.py
+│   ├── test_colors.py    # Tests for color utilities
 │   ├── test_weather.py   # Tests for weather service
 │   ├── test_geocoding.py # Tests for geocoding service
 │   ├── test_widgets.py   # Tests for Textual widgets
@@ -67,43 +76,34 @@ weather-tui/
 └── README.md
 ```
 
-## Features to implement 🎯
+## Features ✅
 
-### 1. Location Input
-- Text input for entering city/place name
-- Uses OpenWeatherMap Geocoding API to resolve to lat/lon
-- Adapt `forward_geocode()` from `lat-long-mcp-server/lat_long_mcp_server/server.py`
+### 1. Location Search
+- Press `s` to open search modal
+- Uses OpenWeatherMap Geocoding API to resolve place names to lat/lon
+- Default location: Munich
 
-### 2. Hourly Graph (Today)
-- ASCII/Unicode bar graph showing hour-by-hour data
-- Temperature curve (°C)
-- Rain/precipitation bars (mm)
-- Use Textual's `Static` or custom `Widget` with Rich renderables
+### 2. Current Weather Display
+- Shows location name, date, weather emoji/description
+- Temperature with color coding (blue=cold, green=mild, red=hot)
+- High/low temperatures for the day
 
-### 3. Daily Forecast (Next Days)
-- Summary cards for upcoming days (e.g., 5-7 days)
-- Show: date, high/low temp, weather condition icon (emoji), precipitation chance
+### 3. Hourly Graph (Today)
+- Temperature line graph using `textual-plotext`
+- Precipitation bar chart with color coding
+- Click on a day in daily forecast to show that day's hourly data
 
-### 4. Weather Data Fetching
-- Adapt from `weather-mcp-server/weather_mcp_server/`:
-  - `client.py` — `make_open_meteo_request()`
-  - `fetcher.py` — retry logic for hourly data
-  - `formatter.py` — formatting helpers
+### 4. Daily Forecast (7 Days)
+- Clickable day cards showing date, emoji, high/low temps, precipitation
+- Selecting a day updates hourly graph and current weather display
 
-## Code reuse from sibling repos 🔗
+### 5. Large Clock Display
+- Real-time clock using Textual's Digits widget
+- Updates every second
 
-### From `weather-mcp-server`:
-```python
-# Adapt make_open_meteo_request() from weather_mcp_server/client.py
-# Adapt retry logic from weather_mcp_server/fetcher.py
-# Adapt formatting helpers from weather_mcp_server/formatter.py
-```
-
-### From `lat-long-mcp-server`:
-```python
-# Adapt forward_geocode() and _get_json() from lat_long_mcp_server/server.py
-# Requires OPENWEATHERMAP_API_KEY environment variable
-```
+### 6. Auto-refresh
+- Weather data refreshes automatically every hour
+- Press `r` to manually refresh
 
 ## Testing 🧪
 - **Run tests:** `uv run --extra dev pytest`
@@ -117,11 +117,11 @@ weather-tui/
 ### Textual testing example:
 ```python
 from textual.testing import AppTest
+from weather_tui.app import WeatherApp
 
 async def test_app_loads():
-    app = AppTest(WeatherApp)
-    async with app.run_test():
-        assert app.query_one("#location-input")
+    async with WeatherApp().run_test() as pilot:
+        assert pilot.app.query_one("#main-container")
 ```
 
 ## Linting & Formatting 🔍

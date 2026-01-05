@@ -5,6 +5,7 @@ Adapted from weather-mcp-server.
 
 from datetime import datetime, timezone
 
+import openmeteo_requests
 from openmeteo_sdk.Variable import Variable
 
 from ..models.forecast import (
@@ -13,8 +14,6 @@ from ..models.forecast import (
     HourlyForecast,
     WeatherData,
 )
-
-import openmeteo_requests
 
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 
