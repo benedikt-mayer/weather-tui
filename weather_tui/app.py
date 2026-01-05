@@ -205,6 +205,7 @@ class WeatherScreen(Screen):
         super().__init__(*args, **kwargs)
         self._weather_data: WeatherData | None = None
         self._current_location: str | None = None
+        self._refresh_timer = None
 
     def compose(self) -> ComposeResult:
         yield Header()
@@ -228,9 +229,16 @@ class WeatherScreen(Screen):
         yield Footer()
 
     def on_mount(self) -> None:
-        """Hide weather container initially."""
+        """Hide weather container initially and start refresh timer."""
         weather_container = self.query_one("#weather-container")
         weather_container.display = False
+        # Refresh weather data every hour (3600 seconds)
+        self._refresh_timer = self.set_interval(3600, self._auto_refresh)
+
+    def _auto_refresh(self) -> None:
+        """Automatically refresh weather data."""
+        if self._current_location:
+            self.run_worker(self.load_weather(self._current_location))
 
     async def load_weather(self, location: str) -> None:
         """Load weather for a location."""
