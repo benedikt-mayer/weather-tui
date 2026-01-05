@@ -47,7 +47,7 @@ class CurrentWeatherWidget(Static):
             data.location_name if data.location_name else "Current Location",
             today,
             "",
-            current.description,
+            f"{current.emoji}  {current.description}",
             "",
             temp_str,
         ]
@@ -75,7 +75,7 @@ class CurrentWeatherWidget(Static):
             location_name if location_name else "Current Location",
             day_name,
             "",
-            day.description,
+            f"{day.emoji}  {day.description}",
             "",
             "",  # Empty line to match today's "Temperature:" line
         ]

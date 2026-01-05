@@ -15,7 +15,7 @@ class DayCard(Static):
     DEFAULT_CSS = """
     DayCard {
         width: 10;
-        height: 6;
+        height: 7;
         min-width: 10;
         border: solid $primary;
         background: $surface;
@@ -72,6 +72,7 @@ class DayCard(Static):
         lines = [
             day_name.center(width),
             date_str.center(width),
+            day.emoji.center(width),
             temp_str,
             prec_str,
         ]
