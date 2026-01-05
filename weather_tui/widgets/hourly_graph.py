@@ -38,6 +38,7 @@ class HourlyGraphWidget(Vertical):
     ) -> None:
         super().__init__(**kwargs)
         self._hourly_data = hourly_data or []
+        self._refresh_timer = None
 
     def compose(self) -> ComposeResult:
         yield Static("🌡️  Temperature (°C)", id="temp-title")
@@ -46,8 +47,10 @@ class HourlyGraphWidget(Vertical):
         yield PlotextPlot(id="precip-plot")
 
     def on_mount(self) -> None:
-        """Render initial plots."""
+        """Render initial plots and start refresh timer."""
         self._render_plots()
+        # Update the "now" marker every 5 minutes (300 seconds)
+        self._refresh_timer = self.set_interval(300, self._render_plots)
 
     def update_data(self, hourly_data: list[HourlyForecast]) -> None:
         """Update the hourly data and refresh plots."""
