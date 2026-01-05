@@ -1,14 +1,18 @@
 """Weather TUI main application."""
 
+from importlib.metadata import version
+
 from textual.app import App
 
 from .screens import WeatherScreen
+
+__version__ = version("weather-tui")
 
 
 class WeatherApp(App):
     """A TUI application for displaying weather forecasts."""
 
-    TITLE = "Weather TUI"
+    TITLE = f"Weather TUI {__version__}"
     CSS = """
     Screen {
         layout: vertical;

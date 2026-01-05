@@ -58,7 +58,9 @@ class CurrentWeatherWidget(Static):
 
         self.update("\n".join(lines))
 
-    def update_for_day(self, day: DailyForecast, location_name: str | None = None) -> None:
+    def update_for_day(
+        self, day: DailyForecast, location_name: str | None = None
+    ) -> None:
         """Update display for a selected day's forecast."""
         if day is None:
             return
