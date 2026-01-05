@@ -16,7 +16,17 @@ A terminal user interface for displaying weather forecasts with hour-by-hour gra
 
 ## Installation
 
-### From PyPI (recommended)
+### Using uvx (recommended, no install needed)
+
+```bash
+# Run directly without installing
+uvx --with weather-tui python -m weather_tui
+
+# With a specific location
+uvx --with weather-tui python -m weather_tui "Berlin"
+```
+
+### From PyPI
 
 ```bash
 pip install weather-tui
@@ -39,14 +49,11 @@ pip install -e .
 ## Usage
 
 ```bash
-# Run the TUI (defaults to Munich)
-weather-tui
+# If installed via pip
+python -m weather_tui
 
-# Or with a specific location
-weather-tui "Berlin"
-
-# Or run as module
-python -m weather_tui "Paris"
+# With a specific location
+python -m weather_tui "Berlin"
 ```
 
 ## Environment Variables
