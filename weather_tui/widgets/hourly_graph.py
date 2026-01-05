@@ -1,5 +1,7 @@
 """Hourly weather graph widget using textual-plotext."""
 
+from datetime import datetime
+
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.widgets import Static
@@ -58,6 +60,19 @@ class HourlyGraphWidget(Vertical):
 
         self._render_temp_plot()
         self._render_precip_plot()
+
+    def _is_today(self) -> bool:
+        """Check if the hourly data is for today."""
+        if not self._hourly_data:
+            return False
+        first_hour = self._hourly_data[0].time
+        today = datetime.now().date()
+        return first_hour.date() == today
+
+    def _get_current_hour_fraction(self) -> float:
+        """Get current time as hour with fraction for minute."""
+        now = datetime.now()
+        return now.hour + now.minute / 60.0
 
     def _temp_to_color(self, temp: float) -> tuple[int, int, int]:
         """Convert temperature to RGB color (blue=cold, green=mild, red=hot).
@@ -129,6 +144,11 @@ class HourlyGraphWidget(Vertical):
             ylabels = [f"{t:6.1f}" for t in yticks]
             plt.yticks(yticks, ylabels)
 
+            # Add current time marker if showing today
+            if self._is_today():
+                current_hour = self._get_current_hour_fraction()
+                plt.vline(current_hour, color="white")
+
         temp_plot.refresh()
 
     def _render_precip_plot(self) -> None:
@@ -164,5 +184,10 @@ class HourlyGraphWidget(Vertical):
                 yticks = [i * y_max / 4 for i in range(5)]
                 ylabels = [f"{p:6.1f}" for p in yticks]
             plt.yticks(yticks, ylabels)
+
+            # Add current time marker if showing today
+            if self._is_today():
+                current_hour = self._get_current_hour_fraction()
+                plt.vline(current_hour, color="white")
 
         precip_plot.refresh()
