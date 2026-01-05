@@ -5,7 +5,7 @@ from datetime import datetime
 from textual.app import App, ComposeResult
 from textual.containers import Container, Horizontal, Vertical
 from textual.screen import Screen
-from textual.widgets import Footer, Header, Input, Static
+from textual.widgets import Digits, Footer, Header, Input, Static
 
 from .models.forecast import WeatherData
 from .services.geocoding import GeocodingError, geocode_location
@@ -167,6 +167,15 @@ class WeatherScreen(Screen):
         padding: 0 1;
     }
 
+    #clock {
+        height: auto;
+        width: 100%;
+        content-align: center middle;
+        text-align: center;
+        padding: 0;
+        border: solid $primary;
+    }
+
     #weather-container {
         height: 1fr;
     }
@@ -221,6 +230,7 @@ class WeatherScreen(Screen):
         yield Header()
         yield Container(
             Static("Press 's' to search for a location", id="status"),
+            Digits("", id="clock"),
             Vertical(
                 Horizontal(
                     CurrentWeatherWidget(id="current-weather"),
@@ -241,8 +251,17 @@ class WeatherScreen(Screen):
         """Hide weather container initially and start refresh timer."""
         weather_container = self.query_one("#weather-container")
         weather_container.display = False
+        clock = self.query_one("#clock", Digits)
+        clock.display = False
         # Refresh weather data every hour (3600 seconds)
         self._refresh_timer = self.set_interval(3600, self._auto_refresh)
+        # Update clock every second
+        self._clock_timer = self.set_interval(1, self._update_clock)
+
+    def _update_clock(self) -> None:
+        """Update the clock display."""
+        clock = self.query_one("#clock", Digits)
+        clock.update(datetime.now().strftime("%H:%M"))
 
     def _auto_refresh(self) -> None:
         """Automatically refresh weather data."""
@@ -277,10 +296,11 @@ class WeatherScreen(Screen):
             # Update widgets
             self._update_display()
 
-            # Hide status, show weather
+            # Hide status, show weather and clock
             status.display = False
             status.remove_class("loading")
             weather_container.display = True
+            self.query_one("#clock", Digits).display = True
 
         except GeocodingError as e:
             status.update(f"Geocoding error: {e}")
