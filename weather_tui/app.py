@@ -401,6 +401,7 @@ class WeatherApp(App):
     CSS = """
     Screen {
         layout: vertical;
+        background: $surface;
     }
     """
 
