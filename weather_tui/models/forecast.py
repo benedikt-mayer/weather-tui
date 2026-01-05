@@ -14,9 +14,13 @@ WEATHER_CODE_EMOJI = {
     51: "🌧️",  # Drizzle: Light
     53: "🌧️",  # Drizzle: Moderate
     55: "🌧️",  # Drizzle: Dense
+    56: "🌧️",  # Freezing drizzle: Light
+    57: "🌧️",  # Freezing drizzle: Dense
     61: "🌧️",  # Rain: Slight
     63: "🌧️",  # Rain: Moderate
     65: "🌧️",  # Rain: Heavy
+    66: "🌧️",  # Freezing rain: Light
+    67: "🌧️",  # Freezing rain: Heavy
     71: "🌨️",  # Snow: Slight
     73: "🌨️",  # Snow: Moderate
     75: "🌨️",  # Snow: Heavy
@@ -24,6 +28,8 @@ WEATHER_CODE_EMOJI = {
     80: "🌦️",  # Rain showers: Slight
     81: "🌦️",  # Rain showers: Moderate
     82: "⛈️",  # Rain showers: Violent
+    85: "🌨️",  # Snow showers: Slight
+    86: "🌨️",  # Snow showers: Heavy
     95: "⛈️",  # Thunderstorm
     96: "⛈️",  # Thunderstorm with slight hail
     99: "⛈️",  # Thunderstorm with heavy hail
@@ -39,9 +45,13 @@ WEATHER_CODE_DESCRIPTION = {
     51: "Light drizzle",
     53: "Moderate drizzle",
     55: "Dense drizzle",
+    56: "Light freezing drizzle",
+    57: "Dense freezing drizzle",
     61: "Slight rain",
     63: "Moderate rain",
     65: "Heavy rain",
+    66: "Light freezing rain",
+    67: "Heavy freezing rain",
     71: "Slight snow",
     73: "Moderate snow",
     75: "Heavy snow",
@@ -49,6 +59,8 @@ WEATHER_CODE_DESCRIPTION = {
     80: "Light showers",
     81: "Moderate showers",
     82: "Violent showers",
+    85: "Light snow showers",
+    86: "Heavy snow showers",
     95: "Thunderstorm",
     96: "Thunderstorm with hail",
     99: "Severe thunderstorm",

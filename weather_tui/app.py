@@ -195,12 +195,6 @@ class WeatherScreen(Screen):
         padding: 0 1;
     }
 
-    #hourly-title {
-        height: 1;
-        padding: 0 1;
-        text-style: bold;
-    }
-
     #status {
         height: auto;
         padding: 0 1;
@@ -234,7 +228,6 @@ class WeatherScreen(Screen):
                     id="top-row",
                 ),
                 Container(
-                    Static("Hourly Forecast - Today", id="hourly-title"),
                     HourlyGraphWidget(id="hourly-graph"),
                     id="hourly-section",
                 ),
@@ -329,12 +322,10 @@ class WeatherScreen(Screen):
             return
 
         hourly_widget = self.query_one("#hourly-graph", HourlyGraphWidget)
-        hourly_title = self.query_one("#hourly-title", Static)
 
         today_hourly = self._weather_data.get_today_hourly()
         hourly_data = today_hourly if today_hourly else self._weather_data.hourly[:24]
         hourly_widget.update_data(hourly_data)
-        hourly_title.update("Hourly Forecast - Today")
 
     def _update_hourly_for_day(self, day_date: datetime, day_index: int) -> None:
         """Update hourly graph with a specific day's data."""
@@ -342,17 +333,12 @@ class WeatherScreen(Screen):
             return
 
         hourly_widget = self.query_one("#hourly-graph", HourlyGraphWidget)
-        hourly_title = self.query_one("#hourly-title", Static)
 
         day_hourly = self._weather_data.get_hourly_for_date(day_date)
 
         if day_hourly:
             hourly_widget.update_data(day_hourly)
-            day_name = day_date.strftime("%A, %B %d")
-            hourly_title.update(f"Hourly Forecast - {day_name}")
         else:
-            day_name = day_date.strftime("%A")
-            hourly_title.update(f"Hourly Forecast - {day_name} (no data)")
             hourly_widget.update_data([])
 
     def on_daily_forecast_widget_day_selected(

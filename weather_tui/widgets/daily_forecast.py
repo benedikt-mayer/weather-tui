@@ -47,7 +47,7 @@ class DayCard(Static):
 
         # Format the card label
         day_name = day.date.strftime("%a")
-        date_str = day.date.strftime("%d.%m")
+        date_str = day.date.strftime("%d.%m.")
 
         # Format precipitation with color
         prec_val = day.precipitation_sum if day.precipitation_sum else 0
@@ -57,12 +57,12 @@ class DayCard(Static):
         # Format temps with colors
         if day.temp_min is not None:
             min_color = temp_to_color(day.temp_min)
-            min_t = f"[{min_color}]{day.temp_min:.0f}[/]"
+            min_t = f"[{min_color}]{day.temp_min:.0f}°[/]"
         else:
             min_t = "?"
         if day.temp_max is not None:
             max_color = temp_to_color(day.temp_max)
-            max_t = f"[{max_color}]{day.temp_max:.0f}[/]"
+            max_t = f"[{max_color}]{day.temp_max:.0f}°[/]"
         else:
             max_t = "?"
         temp_str = f"{min_t}/{max_t}"
@@ -142,8 +142,8 @@ class DailyForecastWidget(Static):
             container.mount(Static("No daily forecast available"))
             return
 
-        # Render up to 7 days
-        for i, day in enumerate(self._daily_data[:7]):
+        # Render up to 4 days
+        for i, day in enumerate(self._daily_data[:4]):
             card = DayCard(day, i)
             if i == self._selected_index:
                 card.add_class("-selected")
