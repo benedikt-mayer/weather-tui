@@ -40,7 +40,7 @@ class CurrentWeatherWidget(Static):
             "",
             current.description,
             "",
-            f"Temperature: {current.temperature:5.1f}°C"
+            f"Temperature Now: {current.temperature:5.1f}°C"
             if current.temperature is not None
             else "Temperature: N/A",
         ]
