@@ -136,6 +136,11 @@ async def test_app_loads():
 - **Commit and push separately:** run `git commit` first, then `git push` as separate steps
 - Always ask before pushing to any remote
 
+## Releasing 📦
+- **Do NOT publish from local** — releases are handled by the GitHub Actions release pipeline
+- To release: push a version tag (e.g., `git tag -a v1.3.0 -m "Release v1.3.0"` then `git push origin v1.3.0`)
+- The pipeline will build and publish to PyPI automatically
+
 ## Debugging tips 🐞
 - Use `textual console` to view logs and debug output
 - Use `textual run --dev weather_tui.app:WeatherApp` for hot-reloading
