@@ -25,6 +25,10 @@ class DayCard(Static):
         content-align: center middle;
     }
 
+    DayCard:hover {
+        background: $surface;
+    }
+
     DayCard.-selected {
         border: solid $success;
     }
