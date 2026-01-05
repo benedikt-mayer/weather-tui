@@ -6,46 +6,7 @@ from textual.message import Message
 from textual.widgets import Static
 
 from ..models.forecast import DailyForecast
-
-
-def _temp_to_color(temp: float) -> str:
-    """Convert temperature to hex color (blue=cold, green=mild, red=hot).
-
-    Scale: -20°C = pure blue, 10°C = green, 35°C = pure red
-    """
-    t_min, t_max = -20.0, 35.0
-    normalized = (temp - t_min) / (t_max - t_min)
-    normalized = max(0.0, min(1.0, normalized))
-
-    if normalized < 0.5:
-        factor = normalized * 2
-        r = 0
-        g = int(255 * factor)
-        b = int(255 * (1 - factor))
-    else:
-        factor = (normalized - 0.5) * 2
-        r = int(255 * factor)
-        g = int(255 * (1 - factor))
-        b = 0
-
-    return f"#{r:02x}{g:02x}{b:02x}"
-
-
-def _precip_to_color(precip: float) -> str:
-    """Convert precipitation to hex color (gray=none, purple=heavy rain).
-
-    Scale: 0mm = gray, 20mm+ = deep purple
-    """
-    p_max = 20.0
-    normalized = min(1.0, precip / p_max)
-
-    # Gray to purple gradient
-    # Gray: #888888, Purple: #8800ff
-    r = int(136 - 136 * normalized)  # 136 -> 0
-    g = int(136 - 136 * normalized)  # 136 -> 0
-    b = int(136 + 119 * normalized)  # 136 -> 255
-
-    return f"#{r:02x}{g:02x}{b:02x}"
+from ..utils import precip_to_color, temp_to_color
 
 
 class DayCard(Static):
@@ -90,17 +51,17 @@ class DayCard(Static):
 
         # Format precipitation with color
         prec_val = day.precipitation_sum if day.precipitation_sum else 0
-        prec_color = _precip_to_color(prec_val)
+        prec_color = precip_to_color(prec_val)
         prec_str = f"[{prec_color}]{prec_val:.0f}mm[/]"
 
         # Format temps with colors
         if day.temp_min is not None:
-            min_color = _temp_to_color(day.temp_min)
+            min_color = temp_to_color(day.temp_min)
             min_t = f"[{min_color}]{day.temp_min:.0f}[/]"
         else:
             min_t = "?"
         if day.temp_max is not None:
-            max_color = _temp_to_color(day.temp_max)
+            max_color = temp_to_color(day.temp_max)
             max_t = f"[{max_color}]{day.temp_max:.0f}[/]"
         else:
             max_t = "?"

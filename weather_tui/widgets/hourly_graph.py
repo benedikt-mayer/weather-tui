@@ -8,6 +8,7 @@ from textual.widgets import Static
 from textual_plotext import PlotextPlot
 
 from ..models.forecast import HourlyForecast
+from ..utils import temp_to_rgb
 
 
 class HourlyGraphWidget(Vertical):
@@ -74,32 +75,6 @@ class HourlyGraphWidget(Vertical):
         now = datetime.now()
         return now.hour + now.minute / 60.0
 
-    def _temp_to_color(self, temp: float) -> tuple[int, int, int]:
-        """Convert temperature to RGB color (blue=cold, green=mild, red=hot).
-
-        Scale: -20°C = pure blue, 10°C = green, 35°C = pure red
-        """
-        # Normalize temperature to 0-1 range
-        t_min, t_max = -20.0, 35.0
-        normalized = (temp - t_min) / (t_max - t_min)
-        normalized = max(0.0, min(1.0, normalized))  # Clamp to 0-1
-
-        # Blue (cold) -> Green (mild) -> Red (hot) gradient
-        if normalized < 0.5:
-            # Blue to green
-            factor = normalized * 2
-            r = 0
-            g = int(255 * factor)
-            b = int(255 * (1 - factor))
-        else:
-            # Green to red
-            factor = (normalized - 0.5) * 2
-            r = int(255 * factor)
-            g = int(255 * (1 - factor))
-            b = 0
-
-        return (r, g, b)
-
     def _render_temp_plot(self) -> None:
         """Render temperature line plot with temperature-based colors."""
         temp_plot = self.query_one("#temp-plot", PlotextPlot)
@@ -118,7 +93,7 @@ class HourlyGraphWidget(Vertical):
             # Plot each segment with color based on temperature
             for i in range(len(hours) - 1):
                 avg_temp = (temps[i] + temps[i + 1]) / 2
-                color = self._temp_to_color(avg_temp)
+                color = temp_to_rgb(avg_temp)
                 plt.plot(
                     [hours[i], hours[i + 1]],
                     [temps[i], temps[i + 1]],
