@@ -70,7 +70,6 @@ class DayCard(Static):
 
     DayCard.-selected {
         border: solid $success;
-        background: $success-darken-3;
     }
     """
 
