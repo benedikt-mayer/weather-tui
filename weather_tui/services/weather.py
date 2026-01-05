@@ -14,10 +14,7 @@ from ..models.forecast import (
     WeatherData,
 )
 
-try:
-    import openmeteo_requests
-except ImportError:
-    openmeteo_requests = None  # type: ignore
+import openmeteo_requests
 
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 
