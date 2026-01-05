@@ -8,6 +8,29 @@ from textual.widgets import Static
 from ..models.forecast import DailyForecast
 
 
+def _temp_to_color(temp: float) -> str:
+    """Convert temperature to hex color (blue=cold, green=mild, red=hot).
+
+    Scale: -20°C = pure blue, 10°C = green, 35°C = pure red
+    """
+    t_min, t_max = -20.0, 35.0
+    normalized = (temp - t_min) / (t_max - t_min)
+    normalized = max(0.0, min(1.0, normalized))
+
+    if normalized < 0.5:
+        factor = normalized * 2
+        r = 0
+        g = int(255 * factor)
+        b = int(255 * (1 - factor))
+    else:
+        factor = (normalized - 0.5) * 2
+        r = int(255 * factor)
+        g = int(255 * (1 - factor))
+        b = 0
+
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 class DayCard(Static):
     """A clickable card representing a single day in the forecast."""
 
@@ -48,19 +71,28 @@ class DayCard(Static):
         # Format the card label
         day_name = day.date.strftime("%a")
         date_str = day.date.strftime("%d.%m")
-        # Format temps without padding, then center the whole string
-        max_t = f"{day.temp_max:.0f}" if day.temp_max is not None else "?"
-        min_t = f"{day.temp_min:.0f}" if day.temp_min is not None else "?"
         prec = f"{day.precipitation_sum:.0f}" if day.precipitation_sum else "0"
-        temp_str = f"{min_t}/{max_t}"
         prec_str = f"{prec}mm"
 
-        # Build label with centered text lines (no emoji due to rendering issues)
+        # Format temps with colors
+        if day.temp_min is not None:
+            min_color = _temp_to_color(day.temp_min)
+            min_t = f"[{min_color}]{day.temp_min:.0f}[/]"
+        else:
+            min_t = "?"
+        if day.temp_max is not None:
+            max_color = _temp_to_color(day.temp_max)
+            max_t = f"[{max_color}]{day.temp_max:.0f}[/]"
+        else:
+            max_t = "?"
+        temp_str = f"{min_t}/{max_t}"
+
+        # Build label with centered text lines
         width = 8
         lines = [
             day_name.center(width),
             date_str.center(width),
-            temp_str.center(width),
+            temp_str,
             prec_str.center(width),
         ]
         label = "\n".join(lines)
