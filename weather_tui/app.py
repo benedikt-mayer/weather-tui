@@ -14,6 +14,29 @@ from .widgets.daily_forecast import DailyForecastWidget
 from .widgets.hourly_graph import HourlyGraphWidget
 
 
+def _temp_to_color(temp: float) -> str:
+    """Convert temperature to hex color (blue=cold, green=mild, red=hot).
+
+    Scale: -20°C = pure blue, 10°C = green, 35°C = pure red
+    """
+    t_min, t_max = -20.0, 35.0
+    normalized = (temp - t_min) / (t_max - t_min)
+    normalized = max(0.0, min(1.0, normalized))
+
+    if normalized < 0.5:
+        factor = normalized * 2
+        r = 0
+        g = int(255 * factor)
+        b = int(255 * (1 - factor))
+    else:
+        factor = (normalized - 0.5) * 2
+        r = int(255 * factor)
+        g = int(255 * (1 - factor))
+        b = 0
+
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
 class CurrentWeatherWidget(Static):
     """Widget showing current weather conditions."""
 
@@ -34,24 +57,32 @@ class CurrentWeatherWidget(Static):
 
         current = data.current
         today = datetime.now().strftime("%A, %B %d")
+
+        # Format current temperature with color
+        if current.temperature is not None:
+            temp_color = _temp_to_color(current.temperature)
+            temp_str = f"Temperature Now: [{temp_color}]{current.temperature:5.1f}°C[/]"
+        else:
+            temp_str = "Temperature: N/A"
+
         lines = [
             data.location_name if data.location_name else "Current Location",
             today,
             "",
             current.description,
             "",
-            f"Temperature Now: {current.temperature:5.1f}°C"
-            if current.temperature is not None
-            else "Temperature: N/A",
+            temp_str,
         ]
 
         # Add high/low from today's daily forecast
         if data.daily:
             today_daily = data.daily[0]
             if today_daily.temp_max is not None and today_daily.temp_min is not None:
+                min_color = _temp_to_color(today_daily.temp_min)
+                max_color = _temp_to_color(today_daily.temp_max)
                 lines.append(
-                    f"Low: {today_daily.temp_min:5.1f}°C / "
-                    f"High: {today_daily.temp_max:5.1f}°C"
+                    f"Low: [{min_color}]{today_daily.temp_min:5.1f}°C[/] / "
+                    f"High: [{max_color}]{today_daily.temp_max:5.1f}°C[/]"
                 )
 
         self.update("\n".join(lines))
@@ -72,11 +103,18 @@ class CurrentWeatherWidget(Static):
         ]
 
         if day.temp_max is not None and day.temp_min is not None:
-            lines.append(f"Low: {day.temp_min:5.1f}°C / High: {day.temp_max:5.1f}°C")
+            min_color = _temp_to_color(day.temp_min)
+            max_color = _temp_to_color(day.temp_max)
+            lines.append(
+                f"Low: [{min_color}]{day.temp_min:5.1f}°C[/] / "
+                f"High: [{max_color}]{day.temp_max:5.1f}°C[/]"
+            )
         elif day.temp_max is not None:
-            lines.append(f"High: {day.temp_max:5.1f}°C")
+            max_color = _temp_to_color(day.temp_max)
+            lines.append(f"High: [{max_color}]{day.temp_max:5.1f}°C[/]")
         elif day.temp_min is not None:
-            lines.append(f"Low: {day.temp_min:5.1f}°C")
+            min_color = _temp_to_color(day.temp_min)
+            lines.append(f"Low: [{min_color}]{day.temp_min:5.1f}°C[/]")
         else:
             lines.append("Temperature: N/A")
 
