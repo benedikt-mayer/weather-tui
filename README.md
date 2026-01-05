@@ -21,9 +21,6 @@ A terminal user interface for displaying weather forecasts with hour-by-hour gra
 ```bash
 # Run directly without installing
 uvx --with weather-tui python -m weather_tui
-
-# With a specific location
-uvx --with weather-tui python -m weather_tui "Berlin"
 ```
 
 ### From PyPI
@@ -51,9 +48,6 @@ pip install -e .
 ```bash
 # If installed via pip
 python -m weather_tui
-
-# With a specific location
-python -m weather_tui "Berlin"
 ```
 
 ## Environment Variables
