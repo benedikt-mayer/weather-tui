@@ -105,12 +105,13 @@ class HourlyGraphWidget(Vertical):
 
         plt.xlabel("Hour")
         plt.xlim(0, 23)
-        xticks = list(range(0, 24, 3))
+        xticks = list(range(0, 24, 1))
         plt.xticks(xticks)
 
         # Format y-axis labels with consistent width (6 chars)
         min_temp = min(temps)
         max_temp = max(temps)
+        # Create ~5 tick marks based on data range
         temp_range = max_temp - min_temp
         step = max(1.0, temp_range / 4)
         y_min = min_temp - step * 0.1
@@ -143,7 +144,7 @@ class HourlyGraphWidget(Vertical):
         plt.bar(hours, precs, color="blue", width=0.8)
         plt.xlabel("Hour")
         plt.xlim(0, 23)
-        xticks = list(range(0, 24, 3))
+        xticks = list(range(0, 24, 1))
         plt.xticks(xticks)
 
         # Format y-axis labels with consistent width (6 chars to match temp)
