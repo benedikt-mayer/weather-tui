@@ -117,8 +117,8 @@ class WeatherScreen(Screen):
         weather_container.display = False
         clock = self.query_one("#clock", Digits)
         clock.display = False
-        # Refresh weather data every hour (3600 seconds)
-        self._refresh_timer = self.set_interval(3600, self._auto_refresh)
+        # Refresh weather data every 5 minutes (300 seconds)
+        self._refresh_timer = self.set_interval(300, self.action_refresh)
         # Update clock every second
         self._clock_timer = self.set_interval(1, self._update_clock)
 
@@ -126,11 +126,6 @@ class WeatherScreen(Screen):
         """Update the clock display."""
         clock = self.query_one("#clock", Digits)
         clock.update(datetime.now().strftime("%H:%M"))
-
-    def _auto_refresh(self) -> None:
-        """Automatically refresh weather data."""
-        if self._current_location:
-            self.run_worker(self.load_weather(self._current_location))
 
     async def load_weather(self, location: str) -> None:
         """Load weather for a location."""
